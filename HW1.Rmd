@@ -1,7 +1,7 @@
 ---
 title: "STA521 HW1"
-author: '[Your Name Here and netid]'
-date: "Due Wednesday September 6, 2019"
+author: 'Guanqi Zeng'
+date: "Due August 28, 2020"
 output:
   pdf_document: default
 ---
@@ -9,54 +9,80 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(ISLR)
+library(GGally)
+library(knitr)
 # add other libraries here
 ```
 
 This exercise involves the Auto data set from ISLR.  Load the data and answer the following questions adding your code in the code chunks. Please submit a pdf version to Sakai.  For full credit, you should push your final Rmd file to your github repo on the STA521-F19 organization site by the deadline  (the version that is submitted on Sakai will be graded)
 
-```{r data, echo=F}
+```{r data, echo=FALSE, include = FALSE}
 data(Auto)
+Auto
 ```
 
 ## Exploratory Data Analysis
 1. Create a summary of the data.  How many variables have missing data?
 
 ```{r}
-
+summary(Auto)
+help(Auto)
 ```
 
+The 16 obervations with missing values are removed from the original data set. There is no missing value in this data set.
 
 2.  Which of the predictors are quantitative, and which are qualitative?
-```{r}
 
-```
+Quantitative: Miles per gallon, number of cylinders, engine displacement, engine horsepower, vehicle weight, and time to accerlerate from 0 to 60
+
+Qualitative: Model year, origin of car, and vehicle name
 
 3. What is the range of each quantitative predictor? You can answer this using the `range()` function.   Create a table with variable name, min, max with one row per variable.   `kable` from the package `knitr` can display tables nicely.
 
 ```{r}
+mpg <- c(max(Auto$mpg),min(Auto$mpg))
+cylinders <- c(max(Auto$cylinders),min(Auto$cylinders))
+displacement <- c(max(Auto$displacement),min(Auto$displacement))
+horsepower <- c(max(Auto$horsepower),min(Auto$horsepower))
+weight <- c(max(Auto$weight),min(Auto$weight))
+acceleration <- c(max(Auto$acceleration),min(Auto$acceleration))
 
+range_matrix <- as.data.frame(rbind(mpg,cylinders,displacement,horsepower,weight,acceleration))
+colnames(range_matrix)<- c("max", "min")
+
+range_table <- kable(range_matrix)
+range_table
 ```
 
 4. What is the mean and standard deviation of each quantitative predictor?  _Format nicely in a table as above_
 
 ```{r}
+mpg <- c(mean(Auto$mpg),sd(Auto$mpg))
+cylinders <- c(mean(Auto$cylinders),sd(Auto$cylinders))
+displacement <- c(mean(Auto$displacement),sd(Auto$displacement))
+horsepower <- c(mean(Auto$horsepower),sd(Auto$horsepower))
+weight <- c(mean(Auto$weight),sd(Auto$weight))
+acceleration <- c(mean(Auto$acceleration),sd(Auto$acceleration))
 
+m.std_matrix <- as.data.frame(rbind(mpg,cylinders,displacement,horsepower,weight,acceleration))
+colnames(m.std_matrix)<- c("mean", "standard deviation")
+
+m.std_table <- kable(m.std_matrix)
+m.std_table
 ```
-
 
 5. Investigate the predictors graphically, using scatterplot matrices  (`ggpairs`) and other tools of your choice. Create some plots
 highlighting the relationships among the predictors. Comment
 on your findings.  _Try adding a caption to your figure_
-```{r}
-
+```{r, warning = FALSE,message = FALSE, fig.cap="Exploratory Data Analysis"}
+ggpairs(Auto, columns = c(1:6))
 ```
+
+There are strong positive linear relationships between displacement and horsepower, displacement and weight, horsepower and weight, cylinders and displacement, cylinders and weight. The corresponding correlations between these variables are 0.897, 0.933, 0.856, 0.951, and 0.898. There are strong negative linear relationships between cylinders and mpg, displacement and mpg, horse power and mpg, weight and mpg. The corresponding correlations are -0.778, -0.805, -0.778, and -0.832.
 
 6. Suppose that we wish to predict gas mileage (mpg) on the basis of the other variables using regression. Do your plots suggest that any of the other variables might be useful in predicting mpg using linear regression? Justify your answer.
 
-```{r}
-
-```
-
+From the plots, number of cylinders, displacement, horsepower, and weight might be useful because they all have strong relationship with mpg. According to the curve shape of these relationships, we might need some transformations.
 
 ## Simple Linear Regression
 
@@ -64,50 +90,79 @@ on your findings.  _Try adding a caption to your figure_
 regression with `mpg` as the response and `horsepower` as the
 predictor. Use the `summary()` function to print the results.
 Comment on the output.
-For example:
-    (a) Is there a relationship between the predictor and the response?
-    (b) How strong is the relationship between the predictor and
-the response?
-    (c) Is the relationship between the predictor and the response
-positive or negative?
-    (d)  Provide a brief interpretation of the parameters that would suitable for discussing with a car dealer, who has little statistical background.
-    (e) What is the predicted mpg associated with a horsepower of
-98? What are the associated 95% confidence and prediction
-intervals?   (see `help(predict)`) Provide interpretations of these for the car dealer.
+```{r}
+md1 <- lm(mpg ~ horsepower, data = Auto)
+summary(md1)
+
+newdata <- as.data.frame(98)
+colnames(newdata)<-"horsepower"
+
+predict(md1, newdata, interval = "prediction", level = 0.95)
+predict(md1, newdata, interval = "confidence", level = 0.95)
+```
+
+  There is a strong negative linear relationship between mpg and horsepower. The correlation coefficient is -0.778. On average, for each 1 horsepower increase in the engine, the miles per gallon decreases by 0.158.
+  When horsepower is 98, the predicted miles per Gallon is 24.467. The prediction interval from 14.809 to 34.125, and the confidence interval is from 23.973 to 24.961. We're 95% confident to say that, with a horsepower of 98, the mean mpg is from 23.973 to 24.961. We're 95% confident to say that, with a horsepower of 98, the mpg is from 14.809 to 34.125.
 
 8. Plot the response and the predictor using `ggplot`.  Add to the plot a line showing the least squares regression line. 
-```{r}
-
+```{r, message = FALSE, warning = FALSE}
+ggplot(data = Auto, aes(x = horsepower, y = mpg)) + 
+  geom_point() +
+  labs(title = "Miles Per Gallon vs. Horsepower",
+       xlabs = "Horsepower",
+       ylabs = "Miles Per Gallon") +
+  geom_smooth(method = "lm")
 ```
 
 9. Use the `plot()` function to produce diagnostic plots of the least squares regression fit. Comment on any problems you see with the model regarding assumptions for using a simple linear regression.  
 
 ```{r}
-
+plot(md1)
 ```
 
+According to the residual plot, the conditions of zero mean and constant variance are both violated. The QQ plot reveals the issue of normality of the residuals. There is no influential point. In addition, it is obvious to see that there is a curve structure in the residual plots. Thus, a linear model might not be a good choice for explaining relationship between mpg and horsepower. 
+
 ## Theory
-
-
 
 10. Show that the  regression function $E(Y \mid x) = f(x)$ is the optimal 
 optimal predictor of $Y$ given $X = x$ using squared error loss:  that is $f(x)$
 minimizes $E[(Y - g(x))^2 \mid X =x]$ over all functions $g(x)$ at all points $X=x$.   _Hint:  there are at least two ways to do this.   Differentiation (so think about how to justify) - or - add and subtract the proposed optimal predictor and who that it must minimize the function._
+
+$E[(Y - g(x))^2 \mid X =x] \\ = \frac{1}{n}(Y-g(x))^T(Y-g(x)) = \frac{1}{n}(Y-X\beta)^T(Y-X\beta)= \frac{1}{n}(Y^TY-Y^TX\beta - \beta^TX^TY + \beta^TX^TX\beta) \\= \frac{2}{n}(X^TX\beta - X^TY)$
+
+To find the optimal predictor for $Y$, we minimize this term. We take the derivative with respect to $\beta$, and set it to 0. We get
+$$X^TX\beta = X^TY$$. Thus, 
+$$\hat{\beta} = (X^TX)^{-1}X^TY$$, so $$g(x) = X \hat{\beta} = X(X^TX)^{-1}X^TY$$ is the optimal predictor.
+
 
 11. (adopted from ELS Ex 2.7 ) Suppose that we have a sample of $N$ pairs $x_i, y_i$ drwan iid from the distribution characterized as follows 
 $$ x_i \sim h(x), \text{ the design distribution}$$
 $$ \epsilon_i \sim g(y), \text{ with mean 0 and variance } \sigma^2 \text{ and are independent of the } x_i $$
 $$Y_i = f(x_i) + \epsilon$$
   (a) What is the conditional expectation of $Y$ given that $X = x_o$?  ($E_{Y \mid X}[Y]$)
+  $$E_{Y \mid X = x_0}[Y] = E_{Y|X=x_0}[f(x)+\epsilon] = f(x_0) + E_{Y|X=x_0}[g(y)] = f(x_0)$$
+  
   (b) What is the conditional variance of $Y$ given that $X = x_o$? ($\text{Var}_{Y \mid X}[Y]$)
+  $$\text{Var}_{Y \mid X = 0}[Y] = Var_{Y|X = 0}[f(x) + \epsilon] = Var_{Y|X = 0}[\epsilon] =\sigma^2$$
+  
   (c) show  that for any estimator $\hat{f}(x)$ that the conditional (given X) (expected)  Mean Squared Error can be decomposed as 
 $$E_{Y \mid X}[(Y - \hat{f}(x_o))^2] = \underbrace{ \text{Var}_{Y \mid X}[\hat{f}(x_o)]}_{\textit{Variance of estimator}} +
-\underbrace{(f(x) - E_{Y \mid X}[\hat{f}(x_o)])^2}_{\textit{Squared Bias}} + \underbrace{\textsf{Var}(\epsilon)}_{\textit{Irreducible}}
-$$
- _Hint:  try the add zero trick of adding and subtracting expected values_
+\underbrace{(f(x) - E_{Y \mid X}[\hat{f}(x_o)])^2}_{\textit{Squared Bias}} + \underbrace{\textsf{Var}(\epsilon)}_{\textit{Irreducible}}$$
+
+Proof:
+
+$E_{Y \mid X}[(Y - \hat{f}(x_o))^2] = E_{Y|X}[(E_{Y|X}[\hat{f}(x_0) - E_{Y|X}[\hat{f}(x_0) + f(x) - f(x) +Y - \hat{f}(x_0)])^2] \\ = E_{Y|X}[(E_{Y|X}[\hat{f}(x_0)]- \hat{f}(x_0) + f(x) - E_{Y|X}[\hat{f}(x_0)] +Y - f(x)])^2]$
+
+Let $$E_{Y|X}[\hat{f}(x_0)]- \hat{f}(x_0) = a$$, $$f(x) - E_{Y|X}[\hat{f}(x_0)] = b$$, $Y - f(x) = c$
+
+$$E_{Y|X}[(a+b+c)^2] 
+= E_{Y|X}[a^2+b^2+c^2+2ab+2bc+2ac] $$
+$$= E_{Y|X}[a^2] + E_{Y|X}[b^2] + E_{Y|X}[c^2]$$ $$+E_{Y|X}[2(E_{Y|X}[\hat{f}(x_0)]f(x)$$
+$$-2(E_{Y|X}[f(x_0)])^2 + 2f(x)y$$ $$-2f(x)^2\\+2f(x)E_{Y|X}[f(x_0)]$$
+$$-2E_{Y|X}[\hat{f}(x_0)]y)]\\= E_{Y|X}[a^2] + E_{Y|X}[b^2]$$ $$ + E_{Y|X}[c^2] =\\Var_{Y \mid X}[\hat{f}(x_o)] $$ $$
+(f(x) - E_{Y \mid X}[\hat{f}(x_o)])^2 + Var(\epsilon)$$
+
   (d) Explain why even if $N$ goes to infinity the above can never go to zero.
-e.g. even if we can learn $f(x)$ perfectly that the error in prediction will not vanish.   
-  (e) Decompose the unconditional mean squared error
-$$E_{Y, X}(f(x_o) - \hat{f}(x_o))^2$$
-into a squared bias and a variance component. (See ELS 2.7(c))
-  (f) Establish a relationship between the squared biases and variance in the above Mean squared errors.
+
+Because the irreducible term cannot be vanished. The error is random with variance $\sigma^2$, and it cannot be erased by modeling.
+
